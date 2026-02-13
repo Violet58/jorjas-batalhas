@@ -4,7 +4,11 @@ const { createCanvas } = require("canvas");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// rota raiz (teste)
+const xpAtual = 200;
+const xpMax = 500;
+
+const xpPercent = Math.min((xpAtual / xpMax) * 100, 100);
+
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
