@@ -1,77 +1,79 @@
-const express = require("express");
-const { createCanvas, loadImage } = require("canvas");
+const express = require('express');
+const { createCanvas, loadImage } = require('canvas');
 const app = express();
 
-app.get("/card", async (req, res) => {
+app.get('/card', async (req, res) => {
+  const { username = 'Player', avatar = 'https://cdn.discordapp.com/embed/avatars/0.png', almas = 0, xpAtual = 0, xpMax = 500 } = req.query;
+
+  const width = 400;
+  const height = 180;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Fundo gradient
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, '#7f5cff');
+  bg.addColorStop(1, '#00ffd5');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  // Blur atrás (glow)
+  ctx.shadowColor = 'rgba(255,255,255,0.3)';
+  ctx.shadowBlur = 30;
+  ctx.fillRect(0, 0, width, height);
+
+  // Avatar
   try {
-    // Recebendo parâmetros da URL
-    const username = req.query.username || "Sky";
-    const avatarUrl = req.query.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
-    const almas = parseInt(req.query.almas) || 0;
-    const xpAtual = parseInt(req.query.xpAtual) || 0;
-    const xpMax = parseInt(req.query.xpMax) || 500;
-
-    // Criando o canvas
-    const width = 400;
-    const height = 180;
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
-
-    // Fundo com gradiente
-    const grad = ctx.createLinearGradient(0, 0, width, height);
-    grad.addColorStop(0, "#7f5cff");
-    grad.addColorStop(1, "#00ffd5");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-
-    // Sombra atrás do card
-    ctx.shadowColor = "rgba(0,0,0,0.4)";
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 5;
-
-    // Avatar
-    const avatar = await loadImage(avatarUrl);
+    const img = await loadImage(avatar);
     ctx.save();
     ctx.beginPath();
-    ctx.arc(50, 90, 40, 0, Math.PI * 2);
+    ctx.arc(80, 90, 50, 0, Math.PI * 2, true); // círculo
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(avatar, 10, 50, 80, 80);
+    ctx.drawImage(img, 30, 40, 100, 100);
     ctx.restore();
 
-    // Nome
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 24px Segoe UI";
-    ctx.fillText(username, 110, 80);
-
-    // Almas
-    ctx.font = "16px Segoe UI";
-    ctx.fillText(`💠 Almas: ${almas}`, 110, 110);
-
-    // XP
-    ctx.fillText(`⚡ XP: ${xpAtual}/${xpMax}`, 110, 140);
-
-    // Barra de XP
-    const barWidth = 250;
-    const barHeight = 20;
-    const xpPercent = Math.min(xpAtual / xpMax, 1);
-    ctx.fillStyle = "rgba(255,255,255,0.2)";
-    ctx.fillRect(110, 150, barWidth, barHeight);
-    ctx.fillStyle = "#ffe259";
-    ctx.fillRect(110, 150, barWidth * xpPercent, barHeight);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(110, 150, barWidth, barHeight);
-
-    // Enviar PNG
-    res.setHeader("Content-Type", "image/png");
-    res.send(canvas.toBuffer());
+    // Borda glow
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(80, 90, 50, 0, Math.PI * 2);
+    ctx.stroke();
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Erro ao gerar o card");
+    console.log('Erro carregando avatar:', err);
   }
+
+  // Nome
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px Segoe UI';
+  ctx.fillText(username, 150, 60);
+
+  // Almas
+  ctx.font = '16px Segoe UI';
+  ctx.fillText(`💠 Almas: ${almas}`, 150, 90);
+
+  // XP
+  ctx.fillText(`⚡ XP: ${xpAtual} / ${xpMax}`, 150, 120);
+
+  // Barra de XP
+  const xpPercent = Math.min(1, xpAtual / xpMax);
+  ctx.fillStyle = '#ffffff50';
+  ctx.fillRect(150, 130, 200, 15);
+
+  const gradient = ctx.createLinearGradient(150, 130, 150 + 200 * xpPercent, 145);
+  gradient.addColorStop(0, '#ffe259');
+  gradient.addColorStop(1, '#ffa751');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(150, 130, 200 * xpPercent, 15);
+
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(150, 130, 200, 15);
+
+  // Enviar PNG direto
+  res.setHeader('Content-Type', 'image/png');
+  res.send(canvas.toBuffer());
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Servidor online na porta " + PORT));
+app.listen(PORT, () => console.log(`Card server online na porta ${PORT}`));
