@@ -10,17 +10,27 @@ app.get('/card', async (req, res) => {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Fundo animado pseudo-glow (linear gradient dinâmico)
-  const time = Date.now() / 1000;
-  const color1 = `hsl(${(time*40)%360}, 70%, 50%)`;
-  const color2 = `hsl(${(time*40+60)%360}, 70%, 50%)`;
+  // Fundo ultra colorido com 5 cores HSL animadas
+  const t = Date.now() / 1000;
+  const colors = [
+    `hsl(${(t*40)%360}, 70%, 50%)`,
+    `hsl(${(t*40+60)%360}, 70%, 50%)`,
+    `hsl(${(t*40+120)%360}, 70%, 50%)`,
+    `hsl(${(t*40+180)%360}, 70%, 50%)`,
+    `hsl(${(t*40+240)%360}, 70%, 50%)`,
+  ];
+
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, color1);
-  bg.addColorStop(1, color2);
+  colors.forEach((color, i) => bg.addColorStop(i/4, color)); // 5 cores no gradiente
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  // Avatar com borda glow
+  // Glow atrás
+  ctx.shadowColor = '#ffffff44';
+  ctx.shadowBlur = 30;
+  ctx.fillRect(0, 0, width, height);
+
+  // Avatar com glow
   try {
     const img = await loadImage(avatar);
     ctx.save();
@@ -59,7 +69,7 @@ app.get('/card', async (req, res) => {
   ctx.fillText(`⚡ XP: ${xpAtual} / ${xpMax}`, 150, 145);
 
   // Barra de XP animada
-  const xpPercent = Math.min(1, xpAtual/xpMax);
+  const xpPercent = Math.min(1, xpAtual / xpMax);
   ctx.fillStyle = '#ffffff33';
   ctx.fillRect(150, 155, 220, 18);
 
@@ -73,9 +83,10 @@ app.get('/card', async (req, res) => {
   ctx.lineWidth = 2;
   ctx.strokeRect(150, 155, 220, 18);
 
+  // Enviar PNG direto
   res.setHeader('Content-Type', 'image/png');
   res.send(canvas.toBuffer());
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Card server ultra online na porta ${PORT}`));
+app.listen(PORT, () => console.log(`Card ultra colorido online na porta ${PORT}`));
