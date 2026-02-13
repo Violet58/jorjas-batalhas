@@ -1,72 +1,68 @@
 const express = require("express");
-const app = express();
+const { createCanvas, loadImage } = require("canvas");
+const fetch = require("node-fetch");
 
+const app = express();
 app.use(express.json());
 
 app.get("/card", async (req, res) => {
-  // ✅ RECEBENDO OS DADOS VIA QUERY
-  const username = req.query.username || "Sky"; // nome do usuário
-  const avatar = req.query.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"; // avatar do Discord
-  const almas = parseInt(req.query.almas) || 5; // número de almas
-  const xpAtual = parseInt(req.query.xpAtual) || 200; // XP atual
-  const xpMax = parseInt(req.query.xpMax) || 500; // XP máximo
+  const username = req.query.username || "Sky";
+  const avatarUrl = req.query.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+  const almas = parseInt(req.query.almas) || 5;
+  const xpAtual = parseInt(req.query.xpAtual) || 200;
+  const xpMax = parseInt(req.query.xpMax) || 500;
 
-  // ✅ CALCULANDO PORCENTAGEM DA BARRA
-  const xpPercent = Math.min((xpAtual / xpMax) * 100, 100);
+  // Criar canvas
+  const width = 360;
+  const height = 180;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
 
-  // ✅ ENVIANDO HTML COM CSS DINÂMICO
-  res.send(`
-  <!DOCTYPE html>
-  <html lang="pt-BR">
-  <head>
-  <meta charset="UTF-8">
-  <title>Card do Jogador</title>
-  <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at top, #0f0c29, #302b63, #24243e); font-family: 'Segoe UI', sans-serif; color: white; }
-  .card { width: 360px; padding: 20px; border-radius: 20px; background: linear-gradient(135deg, #7f5cff, #00ffd5); box-shadow: 0 0 40px rgba(127,92,255,0.6); position: relative; }
-  .card::before { content: ""; position: absolute; inset: 0; border-radius: 20px; background: linear-gradient(135deg, #7f5cff, #00ffd5); filter: blur(25px); opacity: 0.6; z-index: -1; }
-  .header { display: flex; align-items: center; gap: 15px; }
-  .avatar { width: 72px; height: 72px; border-radius: 50%; border: 3px solid white; object-fit: cover; }
-  .title { font-size: 20px; font-weight: bold; }
-  .stats { margin-top: 15px; background: rgba(0,0,0,0.25); padding: 15px; border-radius: 15px; }
-  .stat { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
-  .xp-bar { height: 12px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; margin-top: 6px; }
-  .xp-fill { height: 100%; width: ${xpPercent}%; background: linear-gradient(90deg, #ffe259, #ffa751); border-radius: 10px; box-shadow: 0 0 10px rgba(255,200,80,0.8); transition: width 0.5s ease; }
-  </style>
-  </head>
+  // Fundo
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#7f5cff");
+  gradient.addColorStop(1, "#00ffd5");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
 
-  <body>
-  <div class="card">
-    <div class="header">
-      <img class="avatar" src="${avatar}">
-      <div>
-        <div class="title">${username}</div>
-        <small>🌌 Portador de Almas</small>
-      </div>
-    </div>
+  // Barra de XP
+  const xpPercent = Math.min(xpAtual / xpMax, 1);
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(20, 140, width - 40, 20);
+  ctx.fillStyle = "#ffe259";
+  ctx.fillRect(20, 140, (width - 40) * xpPercent, 20);
 
-    <div class="stats">
-      <div class="stat">
-        <span>💠 Almas</span>
-        <span>${almas}</span>
-      </div>
+  // Contorno da barra
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, 140, width - 40, 20);
 
-      <div class="stat">
-        <span>⚡ XP</span>
-        <span>${xpAtual} / ${xpMax}</span>
-      </div>
+  // Texto
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 18px Sans";
+  ctx.fillText(username, 110, 50);
+  ctx.font = "14px Sans";
+  ctx.fillText(`💠 Almas: ${almas}`, 110, 80);
+  ctx.fillText(`⚡ XP: ${xpAtual} / ${xpMax}`, 110, 110);
 
-      <div class="xp-bar">
-        <div class="xp-fill"></div>
-      </div>
-    </div>
-  </div>
-  </body>
-  </html>
-  `);
+  // Avatar
+  try {
+    const avatarImg = await loadImage(avatarUrl);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(50, 70, 40, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatarImg, 10, 30, 80, 80);
+    ctx.restore();
+  } catch (err) {
+    console.log("Erro ao carregar avatar:", err);
+  }
+
+  // Enviar como PNG
+  res.setHeader("Content-Type", "image/png");
+  canvas.pngStream().pipe(res);
 });
 
-// 🔥 PORTA
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Card server online na porta ${PORT}`));
