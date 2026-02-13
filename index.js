@@ -63,7 +63,7 @@ app.get('/card', async (req, res) => {
 
   // Almas
   ctx.font = '16px Segoe UI';
-  ctx.fillText(`💠 Almas: ${almas}`, 150, 120);
+  ctx.fillText(`❖ Almas: ${almas}`, 150, 120);
 
   // XP
   ctx.fillText(`⚡ XP: ${xpAtual} / ${xpMax}`, 150, 145);
