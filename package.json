@@ -1,5 +1,5 @@
 {
-  "name": "jorjas-cards",
+  "name": "jorjas-batalhas",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,6 +7,6 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "puppeteer": "^22.0.0"
+    "canvas": "^2.11.2"
   }
 }
