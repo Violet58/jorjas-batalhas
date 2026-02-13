@@ -1,79 +1,57 @@
 const express = require("express");
+const puppeteer = require("puppeteer");
+
 const app = express();
+const port = process.env.PORT || 3000;
 
-app.use(express.json());
-
-// “Banco de dados” temporário (fica na memória)
-let usuarios = {};
-let almas = {};
-
-// Rota de teste
 app.get("/", (req, res) => {
-  res.send("API de batalhas do Jorjas online 🔥");
+  res.send("API de Cards online ✅");
 });
 
-// Criar usuário
-app.post("/usuario", (req, res) => {
-  const { id, nome } = req.body;
+app.get("/card", async (req, res) => {
+  const nome = req.query.nome || "Desconhecido";
+  const almas = req.query.almas || 0;
+  const xp = req.query.xp || 0;
 
-  if (!id || !nome) {
-    return res.status(400).send("Faltando id ou nome");
-  }
+  const html = `
+  <html>
+    <body style="
+      width: 400px;
+      height: 200px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      font-family: Arial;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="text-align:center">
+        <h2>${nome}</h2>
+        <p>👻 Almas: ${almas}</p>
+        <p>✨ XP: ${xp}</p>
+      </div>
+    </body>
+  </html>
+  `;
 
-  if (usuarios[id]) {
-    return res.status(400).send("Usuário já existe");
-  }
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
 
-  usuarios[id] = {
-    nome,
-    almas: []
-  };
+  const page = await browser.newPage();
+  await page.setViewport({ width: 400, height: 200 });
+  await page.setContent(html);
 
-  res.send({ msg: `Usuário ${nome} criado com sucesso` });
+  const image = await page.screenshot({ type: "png" });
+  await browser.close();
+
+  res.set("Content-Type", "image/png");
+  res.send(image);
 });
 
-// Criar alma
-app.post("/alma", (req, res) => {
-  const { id, dono, poder } = req.body;
-
-  if (!id || !dono || poder === undefined) {
-    return res.status(400).send("Faltando dados");
-  }
-
-  if (!usuarios[dono]) {
-    return res.status(400).send("Usuário não existe");
-  }
-
-  almas[id] = {
-    dono,
-    poder,
-    xp: 0,
-    nivel: 1
-  };
-
-  usuarios[dono].almas.push(id);
-
-  res.send({ msg: "Alma criada com sucesso 👻" });
-});
-
-// Batalha entre duas almas
-app.post("/batalha", (req, res) => {
-  const { alma1, alma2 } = req.body;
-
-  if (!almas[alma1] || !almas[alma2]) {
-    return res.status(400).send("Alma não encontrada");
-  }
-
-  const poder1 = almas[alma1].poder + Math.random() * 10;
-  const poder2 = almas[alma2].poder + Math.random() * 10;
-
-  let vencedora;
-  let perdedora;
-
-  if (poder1 >= poder2) {
-    vencedora = alma1;
-    perdedora = alma2;
-  } else {
+app.listen(port, () => {
+  console.log("Servidor rodando na porta " + port);
+});  } else {
     vencedora = alma2;
     perdedora = alma1;
   }
